@@ -24,7 +24,7 @@ class Handler(PatternMatchingEventHandler):
         self.src_dir = src_dir
         self.dest_dir = dest_dir
         self.api = api
-        
+
         global logger
         logger.info("WATCH: %s", self.src_dir)
 

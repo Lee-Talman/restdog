@@ -5,18 +5,17 @@ with open('README.md', encoding='utf-8') as f:
 
 setup(
     name='restdog',
-    version='0.1.0',
+    version='0.1.1',
     description='Python utility that duplicates file modifications over the web via REST API, powered by watchdog.',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/Rivanna-Systems-Engineering/restdog',
+    url='',
     author='Lee Talman',
     author_email='leetlmn@gmail.com',
     classifiers=[
         'Development Status :: 3 - Alpha'
         'Intended Audience :: Developers',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
         'Operating System :: OS Independent',
     ],
