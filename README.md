@@ -16,17 +16,11 @@ options:
   --interval            # update interval in seconds (default: 3600)
   --file_types          # whitespace-separated list of watched file types (default: "*.csv" "*.xls" "*.xlsx" "*.xlsm")
 ```
-Or install it into your local environment with `pip install restdog`, then invoke the CLI from another module with the `watch()` function:
-
-```py
-import restdog
-
-restdog.watch()
-```
+~~Or install it into your local environment with `pip install restdog`, then invoke the CLI from another module with the `watch()` function:~~
 
 
 ## Example
-```ps
+```bash
 $python restdog.py "test\source" "http://my-website.com/my-api/my-endpoint" --api --interval 5 --file_types "*.csv" "*.xlsx" "*.txt" 
 # Watches your local directory at the relative path "test\source" for .csv, .xlsx, and .txt file modifications,
 # Sends any changes to "http://my-website.com/my-api/my-endpoint" every 5 seconds.

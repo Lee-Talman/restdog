@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import logging
 import os
 import shutil
@@ -19,7 +20,7 @@ logging.basicConfig(
 
 
 class Handler(PatternMatchingEventHandler):
-    def __init__(self, src_dir, dest_dir, api, patterns, ignore_directories=True, case_sensitive=False) -> None:
+    def __init__(self, src_dir, dest_dir, api, patterns, ignore_directories=False, case_sensitive=False) -> None:
         super().__init__(patterns=patterns)
         self.src_dir = src_dir
         self.dest_dir = dest_dir
@@ -30,11 +31,18 @@ class Handler(PatternMatchingEventHandler):
 
     def get_file_info(self, src_path):
         file_name = os.path.basename(src_path)
-        dest_path = os.path.join(self.dest_dir, file_name)
+        rel_path = os.path.relpath(src_path, self.src_dir)
+        dest_path = os.path.join(self.dest_dir, rel_path)
         return file_name, dest_path
 
     def copy_file(self, src_path, event_type):
         file_name, dest_path = self.get_file_info(src_path)
+        
+        # Ensure destination directory structure exists
+        dest_dir = os.path.dirname(dest_path)
+        os.makedirs(dest_dir, exist_ok=True)
+        
+        # Copy into destination directory
         shutil.copy(src_path, dest_path)
 
         # global logger
@@ -96,9 +104,38 @@ def parseArgs():
     )
     return parser.parse_args()
 
+def calculate_checksum(src_path):
+    hasher = hashlib.sha256()
+    with open(src_path, 'rb') as f:
+        while True:
+            chunk = f.read(4096)
+            if not chunk:
+                break
+            hasher.update(chunk)
+    return hasher.hexdigest()
 
-def watch():
-    args = parseArgs()
+def copy_new_files(args):
+    for root, dirs, files in os.walk(args.src_dir):
+        for file in files:
+            src_path = os.path.join(root, file)
+            rel_path = os.path.relpath(src_path, args.src_dir)
+            dest_path = os.path.join(args.dest_dir, rel_path)
+
+            if not os.path.exists(dest_path):
+                # File doesn't exist in destination or destination doesn't exist, copy it
+                    dest_dir = os.path.dirname(dest_path)
+                    os.makedirs(dest_dir, exist_ok=False)
+
+                    shutil.copy2(src_path, dest_path)
+            else:
+                # File exists in destination, compare checksums
+                source_checksum = calculate_checksum(src_path)
+                dest_checksum = calculate_checksum(dest_path)
+                if source_checksum != dest_checksum:
+                    # If checksums don't match, copy the file
+                    shutil.copy2(src_path, dest_path)
+
+def watch(args):
     event_handler = Handler(src_dir=args.src_dir, dest_dir=args.dest_dir, api=args.api, patterns=args.file_types)
     observer = PollingObserver()
     observer.schedule(event_handler, path=args.src_dir, recursive=True)
@@ -115,4 +152,6 @@ def watch():
 
 
 if __name__ == "__main__":
-    watch()
+    args = parseArgs()
+    copy_new_files(args)
+    watch(args)
