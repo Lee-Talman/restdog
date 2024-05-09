@@ -37,11 +37,11 @@ class Handler(PatternMatchingEventHandler):
 
     def copy_file(self, src_path, event_type):
         file_name, dest_path = self.get_file_info(src_path)
-        
+
         # Ensure destination directory structure exists
         dest_dir = os.path.dirname(dest_path)
         os.makedirs(dest_dir, exist_ok=True)
-        
+
         # Copy into destination directory
         shutil.copy(src_path, dest_path)
 
@@ -104,15 +104,17 @@ def parseArgs():
     )
     return parser.parse_args()
 
+
 def calculate_checksum(src_path):
     hasher = hashlib.sha256()
-    with open(src_path, 'rb') as f:
+    with open(src_path, "rb") as f:
         while True:
             chunk = f.read(4096)
             if not chunk:
                 break
             hasher.update(chunk)
     return hasher.hexdigest()
+
 
 def copy_new_files(args):
     for root, dirs, files in os.walk(args.src_dir):
@@ -121,19 +123,23 @@ def copy_new_files(args):
             rel_path = os.path.relpath(src_path, args.src_dir)
             dest_path = os.path.join(args.dest_dir, rel_path)
 
-            if not os.path.exists(dest_path):
-                # File doesn't exist in destination or destination doesn't exist, copy it
+            _, file_extension = os.path.splitext(src_path)
+            if file_extension.lower() in args.file_types:
+                if not os.path.exists(dest_path):
+                    # File doesn't exist in destination or destination doesn't exist, copy it
                     dest_dir = os.path.dirname(dest_path)
                     os.makedirs(dest_dir, exist_ok=True)
 
                     shutil.copy2(src_path, dest_path)
+                else:
+                    # File exists in destination, compare checksums
+                    source_checksum = calculate_checksum(src_path)
+                    dest_checksum = calculate_checksum(dest_path)
+                    if source_checksum != dest_checksum:
+                        # If checksums don't match, copy the file
+                        shutil.copy2(src_path, dest_path)
             else:
-                # File exists in destination, compare checksums
-                source_checksum = calculate_checksum(src_path)
-                dest_checksum = calculate_checksum(dest_path)
-                if source_checksum != dest_checksum:
-                    # If checksums don't match, copy the file
-                    shutil.copy2(src_path, dest_path)
+                return
 
 def watch(args):
     event_handler = Handler(src_dir=args.src_dir, dest_dir=args.dest_dir, api=args.api, patterns=args.file_types)
