@@ -124,7 +124,7 @@ def copy_new_files(args):
             if not os.path.exists(dest_path):
                 # File doesn't exist in destination or destination doesn't exist, copy it
                     dest_dir = os.path.dirname(dest_path)
-                    os.makedirs(dest_dir, exist_ok=False)
+                    os.makedirs(dest_dir, exist_ok=True)
 
                     shutil.copy2(src_path, dest_path)
             else:
