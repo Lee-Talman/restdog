@@ -11,7 +11,7 @@ from watchdog.observers.polling import PollingObserver
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
-    filename="restdog.log",
+    filename="RESTdog.log",
     filemode="a",
     level=logging.INFO,
     format="%(asctime)s : %(message)s",
@@ -120,11 +120,25 @@ def copy_new_files(args):
     for root, dirs, files in os.walk(args.src_dir):
         for file in files:
             src_path = os.path.join(root, file)
+
+            try:
+                # Get the current access and modification times
+                access_time = os.path.getatime(src_path)
+                modification_time = os.path.getmtime(src_path)
+
+                # Update the access and modification times to the current time
+                os.utime(src_path, times=(access_time, modification_time))
+                logger.info(f"Touched file: {src_path}")
+            except Exception as e:
+                logger.info(f"Error touching file {src_path}: {e}")
+
             rel_path = os.path.relpath(src_path, args.src_dir)
             dest_path = os.path.join(args.dest_dir, rel_path)
 
             _, file_extension = os.path.splitext(src_path)
-            if file_extension.lower() in args.file_types:
+
+            # Convert to wildcard file extension (e.g. '.xls' becomes '*.xls') to accomodate Handler() args
+            if ('*' + file_extension.lower()) in args.file_types:
                 if not os.path.exists(dest_path):
                     # File doesn't exist in destination or destination doesn't exist, copy it
                     dest_dir = os.path.dirname(dest_path)
@@ -139,14 +153,15 @@ def copy_new_files(args):
                         # If checksums don't match, copy the file
                         shutil.copy2(src_path, dest_path)
             else:
-                return
+                continue
+
 
 def watch(args):
     event_handler = Handler(src_dir=args.src_dir, dest_dir=args.dest_dir, api=args.api, patterns=args.file_types)
     observer = PollingObserver()
     observer.schedule(event_handler, path=args.src_dir, recursive=True)
     observer.start()
-    print("restdog started - check restdog.log for in-depth logging.")
+    print("RESTdog started - check RESTdog.log for in-depth logging.")
 
     try:
         while True:
@@ -158,6 +173,14 @@ def watch(args):
 
 
 if __name__ == "__main__":
+    try:
+        # Clear log file
+        with open("RESTdog.log", "w"):
+            pass 
+        print("Cleared contents of RESTdog.log.")
+    except Exception as e:
+        print(f"Error clearing log file: {e}")
+
     args = parseArgs()
     copy_new_files(args)
     watch(args)
