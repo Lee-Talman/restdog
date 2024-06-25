@@ -27,7 +27,17 @@ def clone_directory(source, dest, file_types):
             logger.info(f"Cloned directory: {dest_item}")
         elif any(source_item.endswith(ext) for ext in file_types):
             shutil.copy2(source_item, dest_item)
-            logger.info(f"Cloned file: {source_item}")
+            # Truncate item name and move to new path
+            dest_trunc = os.path.join(dest, truncate(item, 18))
+            shutil.move(dest_item, dest_trunc)
+            logger.info(f"Cloned file: {source_item} to {dest_trunc}")
+
+def truncate(item, max_length):
+    # Truncate longer item names and replace whitepace with underscores
+    if len(item) > max_length:
+        item = item.replace(' ', '_')
+        item = item[:max_length]
+    return item
 
 def main(source, dest, interval, file_types):
     global logger
